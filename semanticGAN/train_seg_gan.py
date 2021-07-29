@@ -487,6 +487,7 @@ def train(args, ckpt_dir, img_loader, seg_loader, seg_val_loader, generator, dis
                 print("==================Start calculating validation scores==================")
                 validate(args, discriminator_img, discriminator_seg, seg_val_loader, device, writer, i)
                 
+                
             if i % args.save_every == 0:
                 print("==================Start calculating FID==================")
                 IS_mean, IS_std, FID = get_inception_metrics(sample_fn, num_inception_images=10000, use_torch=False)
@@ -511,6 +512,7 @@ def train(args, ckpt_dir, img_loader, seg_loader, seg_val_loader, generator, dis
                     },
                     os.path.join(ckpt_dir, f'ckpt/{str(i).zfill(6)}.pt'),
                 )
+                
 
 def get_seg_dataset(args, phase='train'):
     if args.seg_name == 'celeba-mask':
@@ -541,6 +543,8 @@ if __name__ == '__main__':
     device = 'cuda'
 
     parser = argparse.ArgumentParser()
+    
+    parser.add_argument("--local_rank", type=int, default=0)
 
     parser.add_argument('--img_dataset', type=str, required=True)
     parser.add_argument('--seg_dataset', type=str, required=True)

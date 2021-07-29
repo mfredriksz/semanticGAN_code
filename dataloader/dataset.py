@@ -94,16 +94,40 @@ class CelebAMaskDataset(Dataset):
         self.label_dir = os.path.join(self.data_root, 'label')
 
         self.phase = phase
+        
+        # need this to match the number of segments you have
         self.color_map = {
-            0: [  0,   0,   0],
-            1: [ 0,0,205],
-            2: [132,112,255],
-            3: [ 25,25,112],
-            4: [187,255,255],
-            5: [ 102,205,170],
-            6: [ 227,207,87],
-            7: [ 142,142,56]
+            0: [0, 0, 0],
+            1: [204, 0, 0], 
+            2: [76, 153, 0], 
+            3: [204, 204, 0], 
+            4: [51, 51, 255], 
+            5: [204, 0, 204], 
+            6: [0, 255, 255], 
+            7: [255, 204, 204], 
+            8: [102, 51, 0], 
+            9: [255, 0, 0], 
+            10: [102, 204, 0], 
+            11: [255, 255, 0], 
+            12: [0, 0, 153], 
+            13: [0, 0, 204], 
+            14: [255, 51, 153], 
+            15: [0, 204, 204], 
+            16: [0, 51, 0], 
+            17: [255, 153, 51], 
+            18: [0, 204, 0]
         }
+
+#         self.color_map = {
+#             0: [  0,   0,   0],
+#             1: [ 0,0,205],
+#             2: [132,112,255],
+#             3: [ 25,25,112],
+#             4: [187,255,255],
+#             5: [ 102,205,170],
+#             6: [ 227,207,87],
+#             7: [ 142,142,56]
+#         }
 
         self.data_size = len(self.idx_list)
         self.resolution = resolution
@@ -158,11 +182,12 @@ class CelebAMaskDataset(Dataset):
     def __getitem__(self, idx):
         if idx >= self.data_size:
             idx = idx % (self.data_size)
-        img_idx = self.idx_list[idx]
-        img_pil = Image.open(os.path.join(self.img_dir, img_idx)).convert('RGB').resize((self.resolution, self.resolution))
-        mask_pil = Image.open(os.path.join(self.label_dir, img_idx)).convert('L').resize((self.resolution, self.resolution), resample=0)
         
         if self.is_label:
+            img_idx = self.idx_list[idx].split('.')[0]
+            mask_pil = Image.open(os.path.join(self.label_dir, img_idx + '.png')).convert('L').resize((self.resolution, self.resolution), resample=0)
+            img_pil = Image.open(os.path.join(self.img_dir, img_idx + '.jpg')).convert('RGB').resize((self.resolution, self.resolution))
+            
             if (self.phase == 'train' or self.phase == 'train-val') and self.aug:
                 augmented = self.aug_t(image=np.array(img_pil), mask=np.array(mask_pil))
                 aug_img_pil = Image.fromarray(augmented['image'])
@@ -188,7 +213,13 @@ class CelebAMaskDataset(Dataset):
                 'mask': mask_tensor
             }
         else:
-            img_tensor = self.unlabel_transform(img_pil)
+            img_idx = self.idx_list[idx]
+            img_pil = Image.open(os.path.join(self.img_dir, img_idx)).convert('RGB').resize((self.resolution, self.resolution))
+            
+            if self.unlabel_transform is not None:
+                img_tensor = self.unlabel_transform(img_pil)
+            else:
+                img_tensor = self.preprocess(img_pil)
             return {
                 'image': img_tensor,
             }
